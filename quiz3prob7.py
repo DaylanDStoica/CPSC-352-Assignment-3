@@ -33,13 +33,15 @@ def create_account():
 		password = input( "password: ")
 		# hash the password,
 		# append the username and hashed_password to the db file
-		salt = bcrypt.gensalt()
-		hashed_pass = hash_password( password, salt)
+		# salt = bcrypt.gensalt()
+		hashed_pass = hash_password( password)
+		# hashed_pass = bcrypt.hashpw( password, salt)
 		append_dbfile = open( passwordfile, 'a')
-		store_string = username + "  " + str( hashed_pass ) + " " + str(salt)
+		# store_string = username + "  " + str( hashed_pass ) + " " + str(salt)
+		store_string = username + " " + str( hashed_pass ) # remove salt
 		# append_dbfile.write( username, hashed_pass)
-		append_dbfile.write( store_string)
-		append_dbfile.write("\n") # set to new line
+		append_dbfile.write( store_string + '\n')
+		# append_dbfile.write("\n") # set to new line
 		append_dbfile.close()
 	return username, hashed_pass
 	
@@ -54,26 +56,40 @@ def loginto_account():
 	if ( is_username_exist( username) ):
 		# get the user entry
 		user_entry = get_user_entry( username) # an array
+		print("entry user: ", user_entry)
+		# stored_hash = user_entry[1]
+		# stored_salt = user_entry[2]
 		stored_hash = user_entry[1]
-		stored_salt = user_entry[2]
+		print("User stored: ", user_entry[0])
+		print("hash stored: ", stored_hash)
 		# retrieve salt for user
 		# salt = 
 		#proceed for login
 		password = input("password: ")
 		# compare hashed passwords
-		hashed_pass = hash_password(password, stored_salt)
-		check_str = username + "  "+ str(hashed_pass)
-		print("hashed password: " , hashed_pass)
-		open_file = open(passwordfile, 'r')
-		if ( check_str in open_file.read() ): 
-			# the username and password_hash match in the file
-			open_file.close()
+		# '''
+		# hashed_pass = hash_password(password, stored_salt)
+		# check_str = username + "  "+ str(hashed_pass)
+		# print("hashed password: " , hashed_pass)
+		# open_file = open(passwordfile, 'r')
+		# if ( check_str in open_file.read() ): 
+		# 	# the username and password_hash match in the file
+		# 	open_file.close()
+		# 	return True
+		# else:
+		# 	# fail login
+		# 	open_file.close()
+		# 	return False
+		# '''
+		#encode password to bytes for hash check
+		# password_bytes = password.encode ("utf-8")
+		password_bytes = bytes( password, 'utf-8')
+		# verify passwords post-hash
+		if ( bcrypt.checkpw( password_bytes, stored_hash) ):
+			# login successful
 			return True
 		else:
-			# fail login
-			open_file.close()
 			return False
-
 	else:
 		#report that username is not exist
 		print("no username by that. Please try again.")
@@ -81,6 +97,10 @@ def loginto_account():
 	
 	return 0
 	
+def verify_user ( username = ""):
+	# given the username, verify identity with password and hash
+	pass 
+
 def is_username_exist( username = ""):
 # return true if the given username already exists in the user info file
 	is_exist = False
@@ -91,7 +111,6 @@ def is_username_exist( username = ""):
 
 def get_user_entry( username = ""):
 	# return the array of login info for the user
-	# [ username, hashed_password, salt_value]
 	open_file = open( passwordfile, 'r')
 	file_contents = open_file.readlines()
 	# file_contents = open_file.read()
@@ -104,22 +123,25 @@ def get_user_entry( username = ""):
 	# line_number = file_contents.index(search_str) # find the line number by the username spacer, the index
 	print("line index: " , line_number)
 	chosen_str = file_contents[line_number] # get the line contents of the username match
-	line_array = chosen_str.split(" ")
+	print("entry number: ", line_number)
+	print("entry string: ", chosen_str)
+	line_array = chosen_str.split(" ") # [1] username, [2] hashed_password
 	return line_array
 
 	
-def hash_password ( plain_password = "", salt_int = 1):
+def hash_password ( plain_password = ""):
 	# return the salted hashed version of the password string
 	# hashed_string = ""
 	# bytes = plain_password.encode('utf-8')
-	bytes = str.encode( plain_password)
-	# salt = bcrypt.gensalt()
+	bytes_pass = bytes( plain_password, 'utf-8')
+	# bytes = str.encode( plain_password)
+	salt = bcrypt.gensalt()
 	
 	# hashed_string = str( bcrypt.hashpw( bytes, salt) )
 	# hashed_string = bcrypt.hashpw( bytes, salt_int)
-	salt = salt_int 
+	# salt = salt_int 
 	print("salt: ", salt)
-	hashed_string = bcrypt.hashpw( bytes, salt)
+	hashed_string = bcrypt.hashpw( bytes_pass, salt)
 	return hashed_string
 
 def match_username_password ( username = "", hashed_pass = ""):
